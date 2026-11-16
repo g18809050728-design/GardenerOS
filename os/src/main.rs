@@ -1,0 +1,59 @@
+#![no_std]
+#![no_main]
+
+mod console;
+
+use core::arch::asm;
+use core::panic::PanicInfo;
+
+/// 直接调用 `console::print` 的格式化输出宏。
+#[macro_export]
+macro_rules! print {
+    ($fmt: literal $(, $($arg: tt)+)?) => {
+        $crate::console::print(format_args!($fmt $(, $($arg)+)?));
+    }
+}
+
+/// 在格式串末尾追加换行后输出的格式化宏。
+#[macro_export]
+macro_rules! println {
+    ($fmt: literal $(, $($arg: tt)+)?) => {
+        $crate::console::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+    }
+}
+
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    loop {}
+}
+
+const SYSCALL_EXIT: usize = 93;
+const SYSCALL_WRITE: usize = 64;
+
+fn syscall(id: usize, args: [usize; 3]) -> isize {
+    let mut ret: isize;
+    unsafe {
+        asm!("ecall",
+             in("x10") args[0],
+             in("x11") args[1],
+             in("x12") args[2],
+             in("x17") id,
+             lateout("x10") ret
+        );
+    }
+    ret
+}
+
+pub fn sys_exit(xstate: i32) -> isize {
+    syscall(SYSCALL_EXIT, [xstate as usize, 0, 0])
+}
+
+pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
+    syscall(SYSCALL_WRITE, [fd, buffer.as_ptr() as usize, buffer.len()])
+}
+
+#[no_mangle]
+extern "C" fn _start() {
+    println!("Hello, world!");
+    sys_exit(9);
+}
