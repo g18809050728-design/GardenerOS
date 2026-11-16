@@ -1,0 +1,17 @@
+# Rust 构建产物
+target/
+**/*.rs.bk
+
+# 交叉编译与内核镜像
+*.bin
+*.elf
+*.img
+*.o
+*.a
+*.map
+
+# 编辑器 / 系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
